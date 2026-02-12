@@ -1,0 +1,51 @@
+Mocks: which aren't actually mocking?
+Are async tests waiting too long? especially important question for mock services.
+
+Which jobs are not running in a parallel and could be?
+when did this test first start failing (which commit/blame?) Or... a visual graph if multiple.
+
+Stats... besides average... would be nice to gather the min/max. perhaps with removal of outliers.
+
+Gather DORA metrics. Compare before/after.
+
+Are pre-commit hooks/tests being ran locally before push?
+
+Can the CI be reconfigured to do additional checks even when an earlier check fails? In otherwords... give them as much detail to fix in one go instead of several commit attempts.
+
+Are the scans scanning too much code? (inadvertently scanning node_modules or 3rd party code)
+
+Can the amount of testing vary by deployment environment? or... do all tests, but deploy anyways before all tests are complete (probably dev only).
+
+Do multiple commits restart the pipeline? do developers stomp on each other?
+
+What is the branching strategy (trunk based?)
+
+Does every commit turn into a CI run? Or only on a PR merge?
+
+Would be nice to categorize errors on whether they are hard errors or temporary/ephemeral errors. Might need some keywords to flag these.
+
+Could these be microservices and independent? Developers are affecting each other and perhaps not need be.
+
+Which developers are:
+	Are doing the most? Number of commits?
+	Having the most issues?
+	Taking the most time?
+	Having issues which are blocking others?
+	Quiet about having issues and not asking for help.
+	Giving up on pipelines and cancelling things. Signs of frustration. Churn, iteration.
+
+Check for large timeout values (10 seconds?)
+
+Might need reports for:
+	general
+	each app/repo
+	each developer
+
+Do the failures occur at certain times of day? Like when services are busy?
+
+Probably could detect flakey tests where there were no code changes between the runs.
+
+What's the biggest time waster? The e2e tests look heavy. Does that need to be done all the time or just in an integration environment?
+
+Probably could calc developer cost/time wasted: number flaky reruns by pipeline duration (until failure), plus some padding for context switching.
+

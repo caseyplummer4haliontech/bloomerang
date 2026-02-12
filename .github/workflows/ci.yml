@@ -26,8 +26,8 @@ jobs:
       - name: Generate report
         run: npm run generate
 
-      - name: Upload report
+      - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
-          name: ci-health-report
-          path: report.md
+          name: ci-health-reports
+          path: reports/
