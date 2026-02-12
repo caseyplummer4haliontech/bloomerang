@@ -1,4 +1,5 @@
 import type { Run, FlakyTest, FailureRecord } from "../types.js";
+import { CONTEXT_SWITCH_PENALTY_MIN } from "../constants.js";
 
 /**
  * Detect flaky tests by finding failure patterns that:
@@ -44,8 +45,8 @@ export function analyzeFlaky(
 
     // Estimate wasted time: sum of all job durations in failed runs up to failure
     const wastedSec = records.reduce((sum, r) => sum + r.durationSec, 0);
-    // Add context-switch penalty: 15 min per failure occurrence
-    const contextSwitchMin = records.length * 15;
+    // Add context-switch penalty per failure occurrence
+    const contextSwitchMin = records.length * CONTEXT_SWITCH_PENALTY_MIN;
 
     results.push({
       testPattern: extractTestFile(records[0].failureMessage),

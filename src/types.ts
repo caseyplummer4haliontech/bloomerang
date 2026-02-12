@@ -118,3 +118,20 @@ export interface FeedbackCorrelation {
   comment: string;
   evidence: string[];
 }
+
+export type IssueCategory = "flaky-test" | "slow-pipeline" | "workflow" | "hard-failure";
+
+export interface PrioritizedIssue {
+  title: string;
+  repo: string;
+  category: IssueCategory;
+  frequencyRaw: number;
+  costRaw: number;
+  blastRadiusRaw: number;
+  frequencyScore: number;
+  costScore: number;
+  blastRadiusScore: number;
+  priorityScore: number;
+  detail: string;
+  flag?: string;
+}

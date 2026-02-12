@@ -1,6 +1,5 @@
 import type { Run, RetryChain, TimeWastedSummary } from "../types.js";
-
-const CONTEXT_SWITCH_PENALTY_MIN = 15;
+import { CONTEXT_SWITCH_PENALTY_MIN } from "../constants.js";
 
 /**
  * Detect retry chains and calculate time wasted.

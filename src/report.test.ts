@@ -10,6 +10,7 @@ import { analyzeFlaky } from "./analyzers/flaky.js";
 import { analyzeTimeWasted } from "./analyzers/time-wasted.js";
 import { analyzeCIMinutes } from "./analyzers/ci-minutes.js";
 import { analyzeFeedback } from "./analyzers/feedback.js";
+import { prioritize, WEIGHT_FREQUENCY, WEIGHT_COST, WEIGHT_BLAST_RADIUS } from "./analyzers/prioritize.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, "..");
@@ -53,7 +54,7 @@ describe("CI Health Reports", () => {
 
   it("recommendations.md should contain its expected sections", () => {
     expect(reports.recommendations).toContain("# Recommendations");
-    expect(reports.recommendations).toContain("## Improvement Recommendations");
+    expect(reports.recommendations).toContain("## Prioritized Issues");
     expect(reports.recommendations).toContain("## Developer Feedback Correlation");
   });
 
@@ -290,5 +291,74 @@ describe("Feedback Correlation", () => {
     expect(klee!.evidence.some((e) => e.includes("volunteer-signup"))).toBe(
       true,
     );
+  });
+});
+
+// ---- Prioritization tests ----
+
+describe("Prioritization Analyzer", () => {
+  const { runs } = loadRuns();
+  const { workflows } = loadWorkflows();
+  const { feedback } = loadFeedback();
+  const health = analyzeHealth(runs, workflows);
+  const failures = analyzeFailures(runs);
+  const flakyTests = analyzeFlaky(runs, failures);
+  const timeWasted = analyzeTimeWasted(runs);
+  const issues = prioritize(flakyTests, failures, health, timeWasted, runs, feedback);
+
+  it("should produce at least one issue", () => {
+    expect(issues.length).toBeGreaterThan(0);
+  });
+
+  it("should normalize scores between 0 and 1", () => {
+    for (const issue of issues) {
+      expect(issue.frequencyScore).toBeGreaterThanOrEqual(0);
+      expect(issue.frequencyScore).toBeLessThanOrEqual(1);
+      expect(issue.costScore).toBeGreaterThanOrEqual(0);
+      expect(issue.costScore).toBeLessThanOrEqual(1);
+      expect(issue.blastRadiusScore).toBeGreaterThanOrEqual(0);
+      expect(issue.blastRadiusScore).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("should sort issues by priority score descending", () => {
+    for (let i = 1; i < issues.length; i++) {
+      expect(issues[i].priorityScore).toBeLessThanOrEqual(
+        issues[i - 1].priorityScore,
+      );
+    }
+  });
+
+  it("should compute composite score from weighted dimensions", () => {
+    for (const issue of issues) {
+      const expected =
+        WEIGHT_FREQUENCY * issue.frequencyScore +
+        WEIGHT_COST * issue.costScore +
+        WEIGHT_BLAST_RADIUS * issue.blastRadiusScore;
+      expect(issue.priorityScore).toBeCloseTo(expected, 1);
+    }
+  });
+
+  it("should flag hard failures as pipeline working as intended", () => {
+    const hardIssues = issues.filter((i) => i.category === "hard-failure");
+    for (const issue of hardIssues) {
+      expect(issue.flag).toContain("Pipeline working as intended");
+      expect(issue.costScore).toBe(0);
+    }
+  });
+
+  it("should include flaky-test, slow-pipeline, and hard-failure categories", () => {
+    const categories = new Set(issues.map((i) => i.category));
+    expect(categories.has("flaky-test")).toBe(true);
+    expect(categories.has("slow-pipeline")).toBe(true);
+    expect(categories.has("hard-failure")).toBe(true);
+  });
+
+  it("should rank flaky tests above hard failures", () => {
+    const topFlaky = issues.find((i) => i.category === "flaky-test");
+    const topHard = issues.find((i) => i.category === "hard-failure");
+    if (topFlaky && topHard) {
+      expect(topFlaky.priorityScore).toBeGreaterThan(topHard.priorityScore);
+    }
   });
 });

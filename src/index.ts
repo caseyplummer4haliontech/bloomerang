@@ -8,6 +8,7 @@ import { analyzeFlaky } from "./analyzers/flaky.js";
 import { analyzeTimeWasted } from "./analyzers/time-wasted.js";
 import { analyzeCIMinutes } from "./analyzers/ci-minutes.js";
 import { analyzeFeedback } from "./analyzers/feedback.js";
+import { prioritize } from "./analyzers/prioritize.js";
 import type {
   RepoHealth,
   FailureRecord,
@@ -15,6 +16,7 @@ import type {
   TimeWastedSummary,
   RepoMinutes,
   FeedbackCorrelation,
+  PrioritizedIssue,
 } from "./types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,6 +39,7 @@ export function generateReports(): Reports {
   const timeWasted = analyzeTimeWasted(runs);
   const ciMinutes = analyzeCIMinutes(runs);
   const feedbackCorrelations = analyzeFeedback(feedback, failures, flakyTests);
+  const prioritized = prioritize(flakyTests, failures, health, timeWasted, runs, feedback);
 
   const timestamp = new Date().toISOString();
 
@@ -66,7 +69,7 @@ export function generateReports(): Reports {
 
     recommendations: [
       renderRecommendationsHeader(timestamp),
-      renderRecommendations(health, flakyTests, timeWasted, ciMinutes, failures),
+      renderPrioritizedIssues(prioritized),
       renderFeedbackCorrelation(feedbackCorrelations),
       "",
       "---",
@@ -226,72 +229,52 @@ ${sections.join("\n\n")}
 `;
 }
 
-function renderRecommendations(
-  health: RepoHealth[],
-  flakyTests: FlakyTest[],
-  timeWasted: TimeWastedSummary,
-  ciMinutes: RepoMinutes[],
-  failures: FailureRecord[],
-): string {
-  const recs: string[] = [];
-  let priority = 1;
+function renderPrioritizedIssues(issues: PrioritizedIssue[]): string {
+  if (issues.length === 0) {
+    return `## Prioritized Issues
 
-  // Recommendation 1: Top flaky test
-  for (const ft of flakyTests) {
-    if (ft.testPattern.includes("volunteer-signup")) {
-      recs.push(
-        `${priority++}. **Fix or quarantine the volunteer-signup e2e test** (${ft.repo})\n` +
-          `   - ${ft.failureCount} failures across ${ft.branches.length} branches and ${ft.actors.length} authors — this is not caused by code changes.\n` +
-          `   - The Cypress test times out waiting for \`[data-testid="step-3-submit"]\`. Likely a race condition in the multi-step form or a missing wait.\n` +
-          `   - **Impact**: ~${ft.estimatedWasteMin} min of developer + CI time wasted. Every PR to volunteer-portal risks a false-red build.\n` +
-          `   - **Action**: Add a retry or increase the Cypress command timeout for this step. Long-term, investigate why step 3 renders late.`,
-      );
-    }
-    if (ft.testPattern.includes("payment_gateway")) {
-      recs.push(
-        `${priority++}. **Stabilize the stripe-mock service container** (${ft.repo})\n` +
-          `   - ${ft.failureCount} integration test failures due to \`Connection refused: stripe-mock:12111\`.\n` +
-          `   - The service container is intermittently failing to start before tests run.\n` +
-          `   - **Impact**: ~${ft.estimatedWasteMin} min wasted. Developers report re-running CI 3+ times for a single PR.\n` +
-          `   - **Action**: Add a health-check wait step before integration tests. Consider using \`services.<id>.options: --health-cmd\` in the workflow, or a startup retry script.`,
-      );
-    }
-    if (ft.testPattern.includes("receipt")) {
-      recs.push(
-        `${priority++}. **Fix the receipt dedup test timeout** (${ft.repo})\n` +
-          `   - ${ft.failureCount} failures across different branches/authors — the test times out after 5000ms.\n` +
-          `   - This is likely a test isolation issue (shared state or slow teardown).\n` +
-          `   - **Action**: Increase timeout or investigate why the test hangs intermittently. Consider running it in isolation to reproduce.`,
-      );
-    }
-  }
-
-  // Recommendation: Slow integration tests
-  const givingApi = health.find((h) => h.repo === "bloomerang/giving-api");
-  if (givingApi) {
-    recs.push(
-      `${priority++}. **Reduce giving-api integration test duration** (currently ~${fmtDuration(givingApi.bottleneckAvgSec)} avg)\n` +
-        `   - Integration tests are the bottleneck at ~8 min. Developers report context-switching during this wait.\n` +
-        `   - **Action**: Profile the test suite to find slow tests. Consider parallelizing tests or splitting into fast/slow tiers with conditional execution.`,
-    );
-  }
-
-  // Recommendation: e2e on every PR
-  const volunteerPortal = health.find(
-    (h) => h.repo === "bloomerang/volunteer-portal",
-  );
-  if (volunteerPortal) {
-    recs.push(
-      `${priority++}. **Run e2e tests selectively on volunteer-portal**\n` +
-        `   - Developer feedback: "I don't understand why we run the full e2e suite on every PR. Most of my changes are CSS fixes."\n` +
-        `   - **Action**: Use path filters in the GitHub Actions workflow to skip e2e tests when only CSS/style files changed. Run full e2e on merge to main.`,
-    );
-  }
-
-  return `## Improvement Recommendations
-
-${recs.join("\n\n")}
+No issues detected.
 `;
+  }
+
+  // Score table
+  const headerRow = `| # | Issue | Category | Freq | Cost | Blast | Priority |`;
+  const divRow    = `|---|-------|----------|------|------|-------|----------|`;
+  const rows = issues.map((issue, i) => {
+    const flag = issue.flag ? " *" : "";
+    return `| ${i + 1} | ${issue.title}${flag} | ${issue.category} | ${issue.frequencyScore.toFixed(2)} | ${issue.costScore.toFixed(2)} | ${issue.blastRadiusScore.toFixed(2)} | **${issue.priorityScore.toFixed(2)}** |`;
+  });
+
+  // Per-issue details
+  const details = issues.map((issue, i) => {
+    const flagLine = issue.flag ? `\n> _${issue.flag}_\n` : "";
+    return `### ${i + 1}. ${issue.title}
+${flagLine}
+- **Repo**: ${issue.repo}
+- **Category**: ${issue.category}
+- **Frequency**: ${issue.frequencyRaw} occurrences (score: ${issue.frequencyScore.toFixed(2)})
+- **Cost**: ${issue.costRaw} min wasted (score: ${issue.costScore.toFixed(2)})
+- **Blast Radius**: ${issue.blastRadiusRaw} developers affected (score: ${issue.blastRadiusScore.toFixed(2)})
+- **Priority Score**: **${issue.priorityScore.toFixed(2)}**
+
+${issue.detail}
+`;
+  });
+
+  const hasFlagged = issues.some((i) => i.flag);
+  const footnote = hasFlagged
+    ? `\n_* Pipeline working as intended — included for completeness but not a Platform/DevEx concern._\n`
+    : "";
+
+  return `## Prioritized Issues
+
+Issues ranked by composite priority score (frequency × ${(0.35).toFixed(2)} + cost × ${(0.40).toFixed(2)} + blast radius × ${(0.25).toFixed(2)}):
+
+${headerRow}
+${divRow}
+${rows.join("\n")}
+${footnote}
+${details.join("\n")}`;
 }
 
 // ---- Helpers ----
