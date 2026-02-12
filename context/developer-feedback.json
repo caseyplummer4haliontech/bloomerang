@@ -1,0 +1,34 @@
+{
+  "feedback": [
+    {
+      "author": "schen",
+      "team": "CRM Core",
+      "comment": "I re-ran giving-api CI 3 times last week because of that stripe-mock thing. Total waste of time."
+    },
+    {
+      "author": "klee",
+      "team": "Volunteer",
+      "comment": "The volunteer-signup e2e test fails on basically every PR and it's never actually broken. We just re-run and pray."
+    },
+    {
+      "author": "agarcia",
+      "team": "Payments",
+      "comment": "Our integration tests take 8 minutes. That's 8 minutes of context-switching every push. I end up batching changes which makes reviews harder."
+    },
+    {
+      "author": "tpatel",
+      "team": "Volunteer",
+      "comment": "I don't understand why we run the full e2e suite on every PR. Most of my changes are CSS fixes."
+    },
+    {
+      "author": "mjohnson",
+      "team": "CRM Core",
+      "comment": "The receipt dedup test in donor-crm has failed on two of my PRs and I've never touched that code. Feels flaky."
+    },
+    {
+      "author": "rdavis",
+      "team": "Platform",
+      "comment": "I'd love to know which repos are burning the most CI minutes. Feels like we're paying for a lot of reruns."
+    }
+  ]
+}

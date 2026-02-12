@@ -1,0 +1,144 @@
+{
+  "workflows": [
+    {
+      "repo": "bloomerang/donor-crm",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 45
+        },
+        {
+          "name": "typecheck",
+          "avg_duration_sec": 62
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 195
+        },
+        {
+          "name": "integration-tests",
+          "avg_duration_sec": 310
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 120
+        }
+      ]
+    },
+    {
+      "repo": "bloomerang/giving-api",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 38
+        },
+        {
+          "name": "typecheck",
+          "avg_duration_sec": 55
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 140
+        },
+        {
+          "name": "integration-tests",
+          "avg_duration_sec": 480
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 95
+        }
+      ]
+    },
+    {
+      "repo": "bloomerang/volunteer-portal",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 30
+        },
+        {
+          "name": "typecheck",
+          "avg_duration_sec": 48
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 110
+        },
+        {
+          "name": "e2e-tests",
+          "avg_duration_sec": 540
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 150
+        }
+      ]
+    },
+    {
+      "repo": "bloomerang/admin-console",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 28
+        },
+        {
+          "name": "typecheck",
+          "avg_duration_sec": 40
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 85
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 70
+        }
+      ]
+    },
+    {
+      "repo": "bloomerang/event-processor",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 22
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 95
+        },
+        {
+          "name": "integration-tests",
+          "avg_duration_sec": 260
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 55
+        }
+      ]
+    },
+    {
+      "repo": "bloomerang/notification-service",
+      "workflow": "ci.yml",
+      "jobs": [
+        {
+          "name": "lint",
+          "avg_duration_sec": 18
+        },
+        {
+          "name": "unit-tests",
+          "avg_duration_sec": 70
+        },
+        {
+          "name": "build",
+          "avg_duration_sec": 40
+        }
+      ]
+    }
+  ]
+}

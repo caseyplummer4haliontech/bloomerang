@@ -1,0 +1,1 @@
+Please save a new markdown file in the chats folder with the full chat history. Interleave my prompts verbatim with concise summaries of your responses (plan, actions taken, and files touched) in chronological order. Name the file with a numeric prefix for sequencing and use a short summary of the chat as the title.
