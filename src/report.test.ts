@@ -1,6 +1,7 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { generateReports } from "./index.js";
 import { loadRuns, loadWorkflows, loadFeedback } from "./data/loader.js";
@@ -15,7 +16,7 @@ import type { Run, FlakyTest, FailureRecord, RepoHealth, FeedbackEntry, TimeWast
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = join(__dirname, "..");
-const REPORTS_DIR = join(PROJECT_ROOT, "reports");
+const REPORTS_DIR = join(tmpdir(), "bloomerang-test-reports");
 
 // ---- Report structure tests ----
 

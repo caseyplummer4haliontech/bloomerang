@@ -303,7 +303,7 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-function main() {
+export function main() {
   const reportsDir = join(PROJECT_ROOT, "reports");
   mkdirSync(reportsDir, { recursive: true });
 
@@ -319,4 +319,11 @@ function main() {
   console.log("  - recommendations.md");
 }
 
-main();
+// Only run when executed directly (not when imported by tests)
+const isDirectRun =
+  process.argv[1] &&
+  import.meta.url === `file:///${process.argv[1].replace(/\\/g, "/")}`;
+
+if (isDirectRun) {
+  main();
+}
